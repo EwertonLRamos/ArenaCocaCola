@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "dgSpecHash": "L2gp77DFKOY=",
+  "success": true,
+  "projectFilePath": "/Users/ewerton-ramos/Projetos/ArenaCocaCola/Backend/Backend.csproj",
+  "expectedPackageFiles": [
+    "/Users/ewerton-ramos/.nuget/packages/microsoft.aspnetcore.openapi/10.0.1/microsoft.aspnetcore.openapi.10.0.1.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/microsoft.data.sqlite.core/10.0.6/microsoft.data.sqlite.core.10.0.6.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/microsoft.entityframeworkcore/10.0.6/microsoft.entityframeworkcore.10.0.6.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/microsoft.entityframeworkcore.abstractions/10.0.6/microsoft.entityframeworkcore.abstractions.10.0.6.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/microsoft.entityframeworkcore.analyzers/10.0.6/microsoft.entityframeworkcore.analyzers.10.0.6.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/microsoft.entityframeworkcore.relational/10.0.6/microsoft.entityframeworkcore.relational.10.0.6.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/microsoft.entityframeworkcore.sqlite/10.0.6/microsoft.entityframeworkcore.sqlite.10.0.6.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/microsoft.entityframeworkcore.sqlite.core/10.0.6/microsoft.entityframeworkcore.sqlite.core.10.0.6.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/microsoft.extensions.dependencymodel/10.0.6/microsoft.extensions.dependencymodel.10.0.6.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/microsoft.openapi/2.0.0/microsoft.openapi.2.0.0.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/sqlitepclraw.bundle_e_sqlite3/2.1.11/sqlitepclraw.bundle_e_sqlite3.2.1.11.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/sqlitepclraw.core/2.1.11/sqlitepclraw.core.2.1.11.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/sqlitepclraw.lib.e_sqlite3/2.1.11/sqlitepclraw.lib.e_sqlite3.2.1.11.nupkg.sha512",
+    "/Users/ewerton-ramos/.nuget/packages/sqlitepclraw.provider.e_sqlite3/2.1.11/sqlitepclraw.provider.e_sqlite3.2.1.11.nupkg.sha512"
+  ],
+  "logs": []
+}
