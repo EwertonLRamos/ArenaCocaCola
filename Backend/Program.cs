@@ -1,99 +1,69 @@
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Configuração do Banco de Dados (SQLite)
-builder.Services.AddDbContext<GameDbContext>(options =>
-    options.UseSqlite("Data Source=arena.db"));
+// Configuração de CORS para o React
+builder.Services.AddCors(options => options.AddPolicy("ArenaPolicy", 
+    p => p.WithOrigins("http://localhost:5173").AllowAnyMethod().AllowAnyHeader().AllowCredentials()));
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
-builder.Services.AddAuthorization();
+builder.Services.AddSignalR();
+builder.Services.AddDbContext<ArenaContext>(opt => opt.UseSqlite("Data Source=arena.db"));
 
 var app = builder.Build();
 
-app.UseCors("AllowFrontend");
-app.UseAuthorization();
+app.UseCors("ArenaPolicy");
 
-// 2. Inicialização do Banco de Dados
-// Isso cria o arquivo .db na raiz do projeto e garante que existe um estado inicial
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-    db.Database.EnsureCreated();
-    
-    if (!db.GameStates.Any())
-    {
-        db.GameStates.Add(new GameState { Id = 1, PlayerName = "Jogador", Score = 0, ActiveTarget = -1 });
-        db.SaveChanges();
-    }
-}
+// Gerenciamento de estado simples (Singleton para a Arena)
+var gameState = new GameState();
 
-// 3. Endpoints refatorados para usar o banco de dados
-app.MapPost("/player", async (PlayerRequest request, GameDbContext db) =>
-{
-    var state = await db.GameStates.FindAsync(1);
-    
-    state!.PlayerName = request.Name;
-    state.Score = 0;
-    
-    await db.SaveChangesAsync();
-    return Results.Ok(state);
+// Hub do SignalR
+app.MapHub<ArenaHub>("/arenaHub");
+
+// Endpoints da API
+app.MapPost("/api/game/start", async (string playerName, IHubContext<ArenaHub> hub) => {
+    gameState.Reset(playerName);
+    await hub.Clients.All.SendAsync("UpdateGame", gameState);
+    return Results.Ok(new { message = "Jogo iniciado", player = playerName });
 });
 
-app.MapPost("/hit", async (HitRequest request, GameDbContext db) =>
-{
-    var state = await db.GameStates.FindAsync(1);
+app.MapPost("/api/game/hit", async (IHubContext<ArenaHub> hub) => {
+    if (gameState.IsGameOver) return Results.BadRequest("Jogo finalizado");
     
-    if (/*request.TargetId == state!.ActiveTarget &&*/ request.Hit)
-    {
-        state!.Score += 10;
+    gameState.Score++;
+    await hub.Clients.All.SendAsync("UpdateGame", gameState);
+    return Results.Ok(gameState);
+});
+
+app.MapPost("/api/game/miss", async (IHubContext<ArenaHub> hub, ArenaContext db) => {
+    if (gameState.IsGameOver) return Results.BadRequest("Jogo finalizado");
+
+    gameState.Lives--;
+    if (gameState.Lives <= 0) {
+        gameState.IsGameOver = true;
+        // Salvar no Ranking (SQLite)
+        db.Players.Add(new Player { Name = gameState.PlayerName, Score = gameState.Score });
         await db.SaveChangesAsync();
     }
-
-    return Results.Ok(new { state!.Score });
-});
-
-app.MapGet("/game", async (GameDbContext db) =>
-{
-    var state = await db.GameStates.FindAsync(1);
-    return Results.Ok(state);
+    
+    await hub.Clients.All.SendAsync("UpdateGame", gameState);
+    return Results.Ok(gameState);
 });
 
 app.Run();
 
-
-// Models
-public class GameDbContext : DbContext
-{
-    public GameDbContext(DbContextOptions<GameDbContext> options) : base(options) { }
-    
-    public DbSet<GameState> GameStates { get; set; }
-}
-
-public class GameState
-{
-    public int Id { get; set; } // Necessário para o Entity Framework criar a tabela
-    public string PlayerName { get; set; } = "Jogador";
+// Modelos e Infra
+public class GameState {
+    public string PlayerName { get; set; } = "";
     public int Score { get; set; } = 0;
-    public int ActiveTarget { get; set; } = -1;
+    public int Lives { get; set; } = 3;
+    public bool IsGameOver { get; set; } = false;
+    public void Reset(string name) { PlayerName = name; Score = 0; Lives = 3; IsGameOver = false; }
 }
 
-public class PlayerRequest
-{
-    public string Name { get; set; } = "Jogador";
-}
-
-public class HitRequest
-{
-    public int TargetId { get; set; }
-    public bool Hit { get; set; }
+public class ArenaHub : Hub { }
+public class Player { public int Id { get; set; } public string Name { get; set; } = ""; public int Score { get; set; } }
+public class ArenaContext : DbContext {
+    public ArenaContext(DbContextOptions<ArenaContext> options) : base(options) { }
+    public DbSet<Player> Players => Set<Player>();
 }
