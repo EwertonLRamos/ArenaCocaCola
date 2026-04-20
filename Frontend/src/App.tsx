@@ -1,103 +1,68 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
+import * as signalR from '@microsoft/signalr';
 
 interface GameState {
   playerName: string;
   score: number;
+  lives: number;
+  isGameOver: boolean;
 }
 
 function App() {
-  const [game, setGame] = useState<GameState>({
-    playerName: "",
-    score: 0
-  });
-
-  const [name, setName] = useState("");
-
-  const API_URL = "http://192.168.4.2:5009";
+  const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [name, setName] = useState('');
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetch(`${API_URL}/game`)
-        .then(res => res.json())
-        .then(data => setGame(data));
-    }, 1000);
+    const newConnection = new signalR.HubConnectionBuilder()
+      .withUrl("http://localhost:5000/arenaHub")
+      .withAutomaticReconnect()
+      .build();
 
-    return () => clearInterval(interval);
+    newConnection.start().then(() => {
+      setConnection(newConnection);
+      newConnection.on("UpdateGame", (state: GameState) => setGameState(state));
+    });
   }, []);
 
-  const startGame = async () => {
-    await fetch(`${API_URL}/player`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ name })
-    });
-  };
+  const startGame = () => fetch(`http://localhost:5000/api/game/start?playerName=${name}`, { method: 'POST' });
 
-  return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>⚽ CHUTE AO ALVO</h1>
+  // Estilo Coca-Cola UI
+  const cocaRed = "#F40009";
 
-      <div style={styles.card}>
-        <input
-          placeholder="Nome do jogador"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={styles.input}
+  if (!gameState || gameState.isGameOver) {
+    return (
+      <div style={{ backgroundColor: cocaRed, height: '100vh', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>
+        <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Arena Coca-Cola</h1>
+        {gameState?.isGameOver && <h2>FIM DE JOGO! Score: {gameState.score}</h2>}
+        <input 
+          placeholder="Nome do Jogador" 
+          value={name} 
+          onChange={e => setName(e.target.value)}
+          style={{ padding: '15px', borderRadius: '25px', border: 'none', width: '250px', textAlign: 'center', fontSize: '1.2rem' }}
         />
-        <button onClick={startGame} style={styles.button}>
-          Iniciar
+        <button onClick={startGame} style={{ marginTop: '20px', padding: '15px 40px', borderRadius: '25px', border: '2px solid white', backgroundColor: 'transparent', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.2rem' }}>
+          START
         </button>
       </div>
+    );
+  }
 
-      <div style={styles.scoreBoard}>
-        <h2>{game.playerName}</h2>
-        <p style={styles.score}>{game.score}</p>
-      </div>
+  return (
+    <div style={{ backgroundColor: cocaRed, height: '100vh', color: 'white', textAlign: 'center', paddingTop: '50px', fontFamily: 'sans-serif' }}>
+      <header>
+        <h2 style={{ opacity: 0.9 }}>JOGADOR: {gameState.playerName}</h2>
+        <div style={{ fontSize: '8rem', fontWeight: '900', margin: '20px 0' }}>{gameState.score}</div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+          {[...Array(3)].map((_, i) => (
+            <div key={i} style={{ fontSize: '2rem', filter: i < gameState.lives ? 'none' : 'grayscale(100%)', opacity: i < gameState.lives ? 1 : 0.3 }}>
+              🥤
+            </div>
+          ))}
+        </div>
+      </header>
     </div>
   );
 }
-
-const styles: any = {
-  container: {
-    height: "100vh",
-    backgroundColor: "#E60012", // Coca-cola red
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "white",
-    fontFamily: "Arial"
-  },
-  title: {
-    fontSize: "48px",
-    marginBottom: "20px"
-  },
-  card: {
-    background: "white",
-    padding: "20px",
-    borderRadius: "10px",
-    marginBottom: "30px"
-  },
-  input: {
-    padding: "10px",
-    marginRight: "10px"
-  },
-  button: {
-    backgroundColor: "#E60012",
-    color: "white",
-    border: "none",
-    padding: "10px 20px",
-    cursor: "pointer"
-  },
-  scoreBoard: {
-    textAlign: "center"
-  },
-  score: {
-    fontSize: "80px",
-    fontWeight: "bold"
-  }
-};
 
 export default App;
