@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as signalR from '@microsoft/signalr';
-import './App.css'; // Certifique-se de importar o CSS aqui!
+import './App.css';
 
 interface GameState {
   playerName: string;
@@ -16,7 +16,6 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    // Altera dinamicamente o título da página por segurança, caso o index.html não seja atualizado
     document.title = "Arena Coca-cola";
 
     const newConnection = new signalR.HubConnectionBuilder()
@@ -57,9 +56,6 @@ function App() {
     setErrorMessage('');
   };
 
-  // ==========================================
-  // ESTADO 3: TELA DE GAME OVER
-  // ==========================================
   if (gameState?.isGameOver) {
     return (
       <div className="container">
@@ -77,9 +73,6 @@ function App() {
     );
   }
 
-  // ==========================================
-  // ESTADO 2: TELA DE JOGO ROLANDO
-  // ==========================================
   if (gameState && !gameState.isGameOver) {
     return (
       <div className="container">
@@ -105,9 +98,6 @@ function App() {
     );
   }
 
-  // ==========================================
-  // ESTADO 1: TELA INICIAL (Home)
-  // ==========================================
   return (
     <div className="container">
       <h1 className="title">Arena<br />Coca-Cola</h1>
