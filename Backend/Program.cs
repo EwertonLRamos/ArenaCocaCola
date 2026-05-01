@@ -19,6 +19,7 @@ var app = builder.Build();
 app.UseCors("ArenaPolicy");
 
 var gameState = new GameState();
+CancellationTokenSource? gameTimerCts = null;
 
 app.MapHub<ArenaHub>("/arenaHub");
 
@@ -28,6 +29,8 @@ app.MapPost("/api/game/start", async (string playerName, IHubContext<ArenaHub> h
     await db.Database.EnsureCreatedAsync();
 
     gameState.Reset(playerName);
+    gameTimerCts?.Cancel();
+    gameTimerCts = new CancellationTokenSource();
     
     await hub.Clients.All.SendAsync("UpdateGame", gameState);
     
@@ -41,7 +44,10 @@ app.MapPost("/api/game/start", async (string playerName, IHubContext<ArenaHub> h
         Console.WriteLine($"Erro ao conectar com o hardware: {ex.Message}");
     }
 
-    return Results.Ok(new { message = "Jogo iniciado e banco de dados recriado", player = playerName });
+    // Inicia task de contagem regressiva de 90 segundos
+    _ = Task.Run(async () => await RunGameTimerAsync(gameState, hub, httpClientFactory, gameTimerCts.Token));
+
+    return Results.Ok(new { message = "Jogo iniciado com temporizador de 90 segundos", player = playerName });
 });
 
 app.MapPost("/api/game/stop", async (IHubContext<ArenaHub> hub, IHttpClientFactory httpClientFactory) => {
@@ -69,45 +75,67 @@ app.MapPost("/api/game/hit", async (IHubContext<ArenaHub> hub) => {
     return Results.Ok(gameState);
 });
 
-app.MapPost("/api/game/miss", async (IHubContext<ArenaHub> hub, ArenaContext db) => {
-    if (gameState.IsGameOver) 
-        return Results.BadRequest("Jogo finalizado");
-
-    gameState.Lives--;
-    if (gameState.Lives <= 0) 
+// Método auxiliar para execução da contagem regressiva
+async Task RunGameTimerAsync(GameState state, IHubContext<ArenaHub> hub, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken)
+{
+    try
     {
-        gameState.IsGameOver = true;
-        
-        try 
+        while (!cancellationToken.IsCancellationRequested && !state.IsGameOver)
         {
-            await db.Database.EnsureDeletedAsync();
-            Console.WriteLine("Game Over: Banco de dados excluído com sucesso.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erro ao excluir o banco: {ex.Message}");
+            await Task.Delay(1000, cancellationToken);
+            
+            var elapsed = (DateTime.UtcNow - state.GameStartTime).TotalSeconds;
+            state.TimeRemaining = Math.Max(0, GameState.GameDuration - (int)Math.Round(elapsed));
+            
+            await hub.Clients.All.SendAsync("UpdateGame", state, cancellationToken: cancellationToken);
+            
+            if (state.TimeRemaining <= 0)
+            {
+                state.IsGameOver = true;
+                await hub.Clients.All.SendAsync("UpdateGame", state, cancellationToken: cancellationToken);
+                
+                try
+                {
+                    var client = httpClientFactory.CreateClient("PythonHardware");
+                    await client.PostAsync("parar", null, cancellationToken);
+                    Console.WriteLine("Hardware parado: tempo de 90 segundos expirou.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Erro ao parar hardware no timeout: {ex.Message}");
+                }
+                
+                break;
+            }
         }
     }
-    
-    await hub.Clients.All.SendAsync("UpdateGame", gameState);
-    
-    return Results.Ok(gameState);
-});
+    catch (OperationCanceledException)
+    {
+        Console.WriteLine("Timer cancelado.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erro no timer de jogo: {ex.Message}");
+    }
+}
 
 app.Run();
 
 public class GameState {
     public string PlayerName { get; set; } = "";
     public int Score { get; set; } = 0;
-    public int Lives { get; set; } = 3;
+    public int TimeRemaining { get; set; } = 90;
     public bool IsGameOver { get; set; } = false;
+    public DateTime GameStartTime { get; set; } = DateTime.UtcNow;
+    public const int GameDuration = 90;
     
     public void Reset(string name) 
     { 
         PlayerName = name; 
         Score = 0; 
-        Lives = 3; 
+        TimeRemaining = GameDuration; 
         IsGameOver = false; 
+        GameStartTime = DateTime.UtcNow;
     }
 }
 

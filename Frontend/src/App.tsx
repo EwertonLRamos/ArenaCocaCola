@@ -5,7 +5,7 @@ import './App.css';
 interface GameState {
   playerName: string;
   score: number;
-  lives: number;
+  timeRemaining: number;
   isGameOver: boolean;
 }
 
@@ -79,19 +79,12 @@ function App() {
         <div className="game-area">
           <h2 className="player-name">JOGADOR: {gameState.playerName}</h2>
 
-          <div className="score-display">
-            {gameState.score}
+          <div className="timer-display">
+            {gameState.timeRemaining}s
           </div>
 
-          <div className="lives-container">
-            {[...Array(3)].map((_, i) => (
-              <div 
-                key={i} 
-                className={`life-icon ${i >= gameState.lives ? 'lost' : ''}`}
-              >
-                ⚽
-              </div>
-            ))}
+          <div className="score-display">
+            {gameState.score}
           </div>
         </div>
       </div>

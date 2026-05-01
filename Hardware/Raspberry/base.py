@@ -7,21 +7,21 @@ from gpiozero import Button, OutputDevice
 
 API_URL = "http://localhost:5009/api/game"
 
-ARDUINO_CHANNELS = [
-    {"name": "Placa 1", "out_pin": 5,  "in_pin": 17},
-    {"name": "Placa 2", "out_pin": 6,  "in_pin": 27},
-    {"name": "Placa 3", "out_pin": 13, "in_pin": 22},
-    {"name": "Placa 4", "out_pin": 19, "in_pin": 10},
-    {"name": "Placa 5", "out_pin": 26, "in_pin": 9},
+MODULOS = [
+    {"name": "Módulo 1", "out_pin": 5,  "in_pin": 17},
+    {"name": "Módulo 2", "out_pin": 6,  "in_pin": 27},
+    {"name": "Módulo 3", "out_pin": 13, "in_pin": 22},
+    {"name": "Módulo 4", "out_pin": 19, "in_pin": 10},
+    {"name": "Módulo 5", "out_pin": 26, "in_pin": 9},
 ]
 
 arduino_outputs = [
     OutputDevice(cfg["out_pin"], active_high=True, initial_value=False)
-    for cfg in ARDUINO_CHANNELS
+    for cfg in MODULOS
 ]
 arduino_inputs = [
     Button(cfg["in_pin"], pull_up=False, bounce_time=None)
-    for cfg in ARDUINO_CHANNELS
+    for cfg in MODULOS
 ]
 
 jogo_ativo = False
@@ -68,9 +68,9 @@ def rodar_rodada():
     selected_index = random.randrange(len(arduino_outputs))
     selected_output = arduino_outputs[selected_index]
     selected_input = arduino_inputs[selected_index]
-    placa = ARDUINO_CHANNELS[selected_index]
+    modulo = MODULOS[selected_index]
 
-    print(f"Placa selecionada: {placa['name']} (out_pin={placa['out_pin']}, in_pin={placa['in_pin']})")
+    print(f"{modulo['name']} selecionado | Pino out - {modulo['out_pin']} Pino in - ({modulo['in_pin']})")
 
     selected_output.on()
     time.sleep(0.05)
@@ -103,15 +103,7 @@ def rodar_rodada():
         except Exception as e:
             print(f"Erro ao notificar acerto: {e}")
     else:
-        try:
-            resposta = requests.post(f"{API_URL}/miss", timeout=2)
-            if resposta.status_code == 200:
-                dados = resposta.json()
-                if dados.get("isGameOver", False) == True:
-                    print("Fim de jogo! O jogador perdeu todas as vidas.")
-                    jogo_ativo = False
-        except Exception as e:
-            print(f"Erro ao notificar erro: {e}")
+        print(f"Tempo expirou - {modulo['name']} não foi acertado.")
 
     time.sleep(0.5)
 

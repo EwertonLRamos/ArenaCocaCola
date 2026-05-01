@@ -154,6 +154,15 @@ body {
   opacity: 0.3;
 }
 
+.timer-display {
+  font-size: clamp(3rem, 15vw, 8rem);
+  font-weight: 900;
+  margin: 20px 0;
+  text-shadow: 5px 5px 0px rgba(0, 0, 0, 0.2);
+  line-height: 1;
+  color: var(--text-light);
+}
+
 /* --- TELA DE GAME OVER --- */
 .game-over-title {
   font-size: clamp(3rem, 8vw, 4.5rem);
