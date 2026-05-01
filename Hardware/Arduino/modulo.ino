@@ -1,8 +1,13 @@
+#include <Adafruit_NeoPixel.h>
+
 const int pinosPiezo[] = {A0, A1, A2, A3, A4}; 
 const int numPiezos = 5;
 const int pinoRpiIn = A5;
 const int pinoRpiOut = 9;
 const int pinoFitaLed = 8;
+const int numLeds = 60;
+
+Adafruit_NeoPixel fita(numLeds, pinoFitaLed, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   Serial.begin(115200); 
@@ -13,16 +18,16 @@ void setup() {
 
   pinMode(pinoRpiIn, INPUT);
   pinMode(pinoRpiOut, OUTPUT);
-  pinMode(pinoFitaLed, OUTPUT);
 
   digitalWrite(pinoRpiOut, LOW);
-  digitalWrite(pinoFitaLed, LOW);
+  
+  fita.begin();
+  fita.show();
 }
 
 void loop() {
   if (digitalRead(pinoRpiIn) == HIGH) {
-    
-    digitalWrite(pinoFitaLed, HIGH);
+    preencherCor(255, 255, 255);
     
     unsigned long tempoInicio = millis();
     bool atingiuMeta = false;
@@ -43,15 +48,30 @@ void loop() {
     }
 
     if (atingiuMeta) {
+      preencherCor(0, 255, 0);
+    } else {
+      preencherCor(255, 0, 0);
+    }
+    
+    delay(500);
+
+    preencherCor(0, 0, 0);
+
+    if (atingiuMeta) {
       digitalWrite(pinoRpiOut, HIGH);
       delay(50);
       digitalWrite(pinoRpiOut, LOW);
     }
 
-    digitalWrite(pinoFitaLed, LOW);
-
     while(digitalRead(pinoRpiIn) == HIGH) {
       delay(10);
-    }   
+    }
   }
+}
+
+void preencherCor(uint8_t r, uint8_t g, uint8_t b) {
+  for (int i = 0; i < numLeds; i++) {
+    fita.setPixelColor(i, fita.Color(r, g, b));
+  }
+  fita.show();
 }
