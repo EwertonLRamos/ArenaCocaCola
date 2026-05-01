@@ -1,52 +1,29 @@
 import time
+import board
+import neopixel
 import random
 import requests
 import threading
 from flask import Flask, jsonify
-from gpiozero import Button, LED # Adicionado LED, removido neopixel e board
+from gpiozero import DigitalInputDevice
 
 API_URL = "http://localhost:5009/api/game"
 
 # Configurações de Hardware
-PINO_LED = 24 # Usando o pino 24 (antigo PINO_MATRIZ) para o LED simples
-PINO_KY002 = 23
+PINO_MATRIZ = board.D24
+PINO_PIEZO = 23
+NUM_LEDS = 64
 
-led = LED(PINO_LED)
-
-# Configuração do KY-002 (com pull-up ligado e sem filtro interno)
-sensor_ky002 = Button(PINO_KY002, pull_up=True, bounce_time=None)
+pixels = neopixel.NeoPixel(PINO_MATRIZ, NUM_LEDS, auto_write=False)
+piezo = DigitalInputDevice(PINO_PIEZO, pull_up=False)
 
 jogo_ativo = False
 app = Flask(__name__)
 
-# Variáveis globais para o controle de repique (debounce) e bandeira do jogo
-ultimo_acionamento = 0
-intervalo_ignorado = 0.5
-impacto_detectado_flag = False
-
-def detectou_vibracao():
-    """Esta função roda em segundo plano capturando qualquer micro-impacto instantaneamente."""
-    global ultimo_acionamento, impacto_detectado_flag, jogo_ativo
-    
-    # Se o jogo não estiver ativo, ignoramos a batida
-    if not jogo_ativo:
-        return
-        
-    agora = time.time()
-    # Aplica o nosso filtro de debounce manual
-    if (agora - ultimo_acionamento) > intervalo_ignorado:
-        ultimo_acionamento = agora
-        impacto_detectado_flag = True # Levanta a bandeira para o loop do jogo ver
-
-# Ativa a interrupção de hardware
-sensor_ky002.when_pressed = detectou_vibracao
-
-
 @app.route('/iniciar', methods=['POST'])
 def iniciar_jogo():
-    global jogo_ativo, impacto_detectado_flag
+    global jogo_ativo
     jogo_ativo = True
-    impacto_detectado_flag = False # Limpa qualquer batida acidental antes de começar
     print("Comando recebido: Iniciando o jogo!")
     return jsonify({"mensagem": "Hardware ativado!"}), 200
 
@@ -54,57 +31,56 @@ def iniciar_jogo():
 def parar_jogo():
     global jogo_ativo
     jogo_ativo = False
-    led.off()
+    limpar_matriz()
     print("Comando recebido: Parando o jogo!")
     return jsonify({"mensagem": "Hardware desativado!"}), 200
 
 def rodar_servidor_flask():
     app.run(host='0.0.0.0', port=5010, debug=False, use_reloader=False)
 
+def limpar_matriz():
+    pixels.fill((0, 0, 0))
+    pixels.show()
+
 def rodar_rodada():
-    global jogo_ativo, impacto_detectado_flag
+    global jogo_ativo
     tempo_espera = random.randint(2, 5)
     
     inicio_espera = time.time()
     while (time.time() - inicio_espera) < tempo_espera:
         if not jogo_ativo:
-            led.off()
+            limpar_matriz()
             return
         time.sleep(0.1)
 
-    led.on() # Acende o LED indicando a janela de ação
+    pixels.fill((255, 255, 255)) # Branco: Chute!
+    pixels.show()
 
     start_time = time.time()
     foi_atingido = False
-    impacto_detectado_flag = False # Zera a bandeira exatamente quando a janela de chute abre
     
-    # Janela de 2 segundos para o jogador acertar
     while (time.time() - start_time) < 2.0:
-        # Lemos a bandeira deixada pela interrupção
-        if impacto_detectado_flag:
+        if piezo.is_active:
             foi_atingido = True
-            impacto_detectado_flag = False # Consome a bandeira
             break
         
         if not jogo_ativo:
-            led.off()
+            limpar_matriz()
             return
             
         time.sleep(0.01)
-
-    # O LED apaga independentemente se houve toque (break) ou se os 2s passaram
-    led.off()
 
     if not jogo_ativo:
         return
 
     if foi_atingido:
+        pixels.fill((0, 255, 0)) # Verde
         try:
             requests.post(f"{API_URL}/hit", timeout=2)
-            print("Acerto registrado!")
         except Exception as e: 
             print(f"Erro ao notificar acerto: {e}")
     else:
+        pixels.fill((255, 0, 0)) # Vermelho
         try:
             # Envia o erro e aguarda a resposta da API
             resposta = requests.post(f"{API_URL}/miss", timeout=2)
@@ -120,12 +96,12 @@ def rodar_rodada():
         except Exception as e: 
             print(f"Erro ao notificar erro: {e}")
 
-    # Mantive um pequeno delay de meio segundo para que as rodadas não fiquem
-    # instantaneamente coladas umas nas outras.
+    pixels.show()
     time.sleep(0.5)
+    limpar_matriz()
 
 if __name__ == "__main__":
-    led.off()
+    limpar_matriz()
     
     print("Iniciando servidor do hardware na porta 5010...")
     thread_api = threading.Thread(target=rodar_servidor_flask, daemon=True)
@@ -139,5 +115,5 @@ if __name__ == "__main__":
                 time.sleep(0.1) 
                 
     except KeyboardInterrupt:
-        led.off()
+        limpar_matriz()
         print("\nEncerrando script...")

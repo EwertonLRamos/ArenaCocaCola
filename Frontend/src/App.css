@@ -1,0 +1,169 @@
+:root {
+  --coca-red: #F40009;
+  --text-light: #ffffff;
+  --text-dark: #333333;
+  --error-color: #ffeb3b;
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 6px 12px rgba(0, 0, 0, 0.2);
+  --shadow-text: 3px 3px 5px rgba(0, 0, 0, 0.3);
+}
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  background-color: var(--coca-red);
+  color: var(--text-light);
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* --- TELA INICIAL --- */
+.title {
+  font-size: clamp(3.5rem, 8vw, 5.5rem);
+  line-height: 1.1;
+  margin-bottom: 2rem;
+  text-shadow: var(--shadow-text);
+  text-transform: uppercase;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.player-input {
+  padding: 18px 25px;
+  border-radius: 30px;
+  border: 3px solid transparent;
+  width: 100%;
+  text-align: center;
+  font-size: 1.3rem;
+  outline: none;
+  box-shadow: var(--shadow-sm);
+  color: var(--text-dark);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.player-input.has-error {
+  border-color: var(--error-color);
+}
+
+.error-message {
+  height: 24px;
+  color: var(--error-color);
+  font-weight: bold;
+  font-size: 1rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.error-message.visible {
+  opacity: 1;
+}
+
+.btn-primary {
+  padding: 18px 60px;
+  border-radius: 30px;
+  border: none;
+  background-color: var(--text-light);
+  color: var(--coca-red);
+  font-weight: 900;
+  cursor: pointer;
+  font-size: 1.5rem;
+  box-shadow: var(--shadow-md);
+  text-transform: uppercase;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.25);
+}
+
+.btn-outline {
+  padding: 15px 40px;
+  border-radius: 30px;
+  border: 3px solid var(--text-light);
+  background-color: transparent;
+  color: var(--text-light);
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.btn-outline:hover {
+  background-color: var(--text-light);
+  color: var(--coca-red);
+}
+
+/* --- TELA DE JOGO --- */
+.game-area {
+  width: 100%;
+  max-width: 500px;
+}
+
+.player-name {
+  font-size: 1.5rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+  word-break: break-word;
+}
+
+.score-display {
+  font-size: clamp(5rem, 20vw, 12rem);
+  font-weight: 900;
+  margin: 10px 0;
+  text-shadow: 5px 5px 0px rgba(0, 0, 0, 0.2);
+  line-height: 1;
+}
+
+.lives-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.life-icon {
+  font-size: 3rem;
+  transition: all 0.3s ease;
+}
+
+.life-icon.lost {
+  filter: grayscale(100%);
+  opacity: 0.3;
+}
+
+/* --- TELA DE GAME OVER --- */
+.game-over-title {
+  font-size: clamp(3rem, 8vw, 4.5rem);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0px rgba(0, 0, 0, 0.2);
+}
+
+.game-over-subtitle {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+}
