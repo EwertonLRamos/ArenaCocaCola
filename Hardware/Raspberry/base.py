@@ -73,13 +73,13 @@ def rodar_rodada():
     print(f"Placa selecionada: {placa['name']} (out_pin={placa['out_pin']}, in_pin={placa['in_pin']})")
 
     selected_output.on()
-    time.sleep(0.1)
-    selected_output.off()
+    time.sleep(0.05)
 
     start_time = time.time()
     foi_atingido = False
+    response_deadline = start_time + 3.0
 
-    while (time.time() - start_time) < 2.0:
+    while time.time() < response_deadline:
         if not jogo_ativo:
             desligar_todos_outputs()
             return
@@ -89,6 +89,8 @@ def rodar_rodada():
             break
 
         time.sleep(0.01)
+
+    selected_output.off()
 
     if not jogo_ativo:
         desligar_todos_outputs()
