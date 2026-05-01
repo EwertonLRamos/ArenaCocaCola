@@ -5,3 +5,8 @@
 .vscode/
 *.log
 *.user     
+__pycache__/
+*.pyc
+*.pyo
+arena-coca-cola_env/
+.lgd-*
