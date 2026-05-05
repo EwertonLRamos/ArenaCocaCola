@@ -23,13 +23,19 @@ function App() {
       .withAutomaticReconnect()
       .build();
 
-    newConnection.start().then(() => {
-      setConnection(newConnection);
-      
-      newConnection.on("UpdateGame", (state: GameState) => {
-        setGameState(state);
+    newConnection.start()
+      .then(() => {
+        //console.log("SignalR conectado!");
+        setConnection(newConnection);
+        
+        newConnection.on("UpdateGame", (state: GameState) => {
+          //console.log("Recebido UpdateGame:", state);
+          setGameState(state);
+        });
+      })
+      .catch(err => {
+        console.error("Erro ao conectar SignalR:", err);
       });
-    });
 
     return () => {
       if (newConnection) {
@@ -40,13 +46,21 @@ function App() {
 
   const startGame = () => {
     if (!name.trim()) {
-      setErrorMessage('⚠️ Por favor, digite seu nome!');
+      setErrorMessage('Por favor, digite seu nome!');
       return;
     }
     
     setErrorMessage('');
+    //console.log("Iniciando jogo com nome:", name);
     
     fetch(`http://localhost:5009/api/game/start?playerName=${name}`, { method: 'POST' })
+      .then(response => {
+        //console.log("Resposta do backend:", response);
+        return response.json();
+      })
+      .then(data => {
+        //console.log("Dados da resposta:", data);
+      })
       .catch(err => console.error("Erro ao iniciar jogo:", err));
   };
 

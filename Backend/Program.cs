@@ -3,8 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddCors(options => options.AddPolicy("ArenaPolicy", 
-    p => p.WithOrigins("http://localhost:5173").AllowAnyMethod().AllowAnyHeader().AllowCredentials()));
+builder.Services.AddCors(options => 
+    options.AddPolicy("ArenaPolicy", p 
+        => p.WithOrigins("http://localhost:5173", "http://localhost:5174")
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()));
 
 builder.Services.AddSignalR();
 builder.Services.AddDbContext<ArenaContext>(opt => opt.UseSqlite("Data Source=arena.db"));
@@ -24,6 +28,7 @@ CancellationTokenSource? gameTimerCts = null;
 app.MapHub<ArenaHub>("/arenaHub");
 
 app.MapPost("/api/game/start", async (string playerName, IHubContext<ArenaHub> hub, IHttpClientFactory httpClientFactory, ArenaContext db) => {
+    //Console.WriteLine($"Iniciando jogo para jogador: {playerName}");
     
     await db.Database.EnsureDeletedAsync();
     await db.Database.EnsureCreatedAsync();
@@ -32,6 +37,7 @@ app.MapPost("/api/game/start", async (string playerName, IHubContext<ArenaHub> h
     gameTimerCts?.Cancel();
     gameTimerCts = new CancellationTokenSource();
     
+    //Console.WriteLine("Enviando UpdateGame inicial via SignalR");
     await hub.Clients.All.SendAsync("UpdateGame", gameState);
     
     try 
@@ -44,7 +50,6 @@ app.MapPost("/api/game/start", async (string playerName, IHubContext<ArenaHub> h
         Console.WriteLine($"Erro ao conectar com o hardware: {ex.Message}");
     }
 
-    // Inicia task de contagem regressiva de 90 segundos
     _ = Task.Run(async () => await RunGameTimerAsync(gameState, hub, httpClientFactory, gameTimerCts.Token));
 
     return Results.Ok(new { message = "Jogo iniciado com temporizador de 90 segundos", player = playerName });
@@ -75,7 +80,6 @@ app.MapPost("/api/game/hit", async (IHubContext<ArenaHub> hub) => {
     return Results.Ok(gameState);
 });
 
-// Método auxiliar para execução da contagem regressiva
 async Task RunGameTimerAsync(GameState state, IHubContext<ArenaHub> hub, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken)
 {
     try
@@ -87,18 +91,20 @@ async Task RunGameTimerAsync(GameState state, IHubContext<ArenaHub> hub, IHttpCl
             var elapsed = (DateTime.UtcNow - state.GameStartTime).TotalSeconds;
             state.TimeRemaining = Math.Max(0, GameState.GameDuration - (int)Math.Round(elapsed));
             
+            //Console.WriteLine($"Timer: {state.TimeRemaining}s restantes");
             await hub.Clients.All.SendAsync("UpdateGame", state, cancellationToken: cancellationToken);
             
             if (state.TimeRemaining <= 0)
             {
                 state.IsGameOver = true;
+                //Console.WriteLine("Timer expirou - jogo finalizado");
                 await hub.Clients.All.SendAsync("UpdateGame", state, cancellationToken: cancellationToken);
                 
                 try
                 {
                     var client = httpClientFactory.CreateClient("PythonHardware");
                     await client.PostAsync("parar", null, cancellationToken);
-                    Console.WriteLine("Hardware parado: tempo de 90 segundos expirou.");
+                    //Console.WriteLine("Hardware parado: tempo de 90 segundos expirou.");
                 }
                 catch (Exception ex)
                 {
