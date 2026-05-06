@@ -1,11 +1,11 @@
 #include <Adafruit_NeoPixel.h>
 
-const int pinosPiezo[] = {A0, A1, A2, A3, A4}; 
+const int pinosPiezo[] = {A1, A2, A3, A4, A5}; 
 const int numPiezos = 5;
-const int pinoRpiIn = A5;
+const int pinoRpiIn = A7;
 const int pinoRpiOut = 9;
-const int pinoFitaLed = 8;
-const int numLeds = 60;
+const int pinoFitaLed = 12;
+const int numLeds = 17;
 
 Adafruit_NeoPixel fita(numLeds, pinoFitaLed, NEO_GRB + NEO_KHZ800);
 
