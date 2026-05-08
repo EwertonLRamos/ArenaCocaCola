@@ -2,7 +2,7 @@
 
 const int pinosPiezo[] = {A1, A2, A3, A4, A5}; 
 const int numPiezos = 5;
-const int pinoRpiIn = A7;
+const int pinoRpiIn = A0;
 const int pinoRpiOut = 9;
 const int pinoFitaLed = 12;
 const int numLeds = 17;
@@ -26,7 +26,7 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(pinoRpiIn) == HIGH) {
+  if (analogRead(pinoRpiIn) >= 750) {
     preencherCor(255, 255, 255);
     
     unsigned long tempoInicio = millis();
@@ -41,7 +41,7 @@ void loop() {
       
       float media = soma / numPiezos;
 
-      if (media > 700) {
+      if (media > 400) {
         atingiuMeta = true;
         break; 
       }
@@ -59,7 +59,7 @@ void loop() {
 
     if (atingiuMeta) {
       digitalWrite(pinoRpiOut, HIGH);
-      delay(50);
+      delay(100);
       digitalWrite(pinoRpiOut, LOW);
     }
 
