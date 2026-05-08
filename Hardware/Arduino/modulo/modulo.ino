@@ -26,7 +26,7 @@ void setup() {
 }
 
 void loop() {
-  if (analogRead(pinoRpiIn) >= 750) {
+  if (digitalRead(pinoRpiIn) == LOW) {
     preencherCor(255, 255, 255);
     
     unsigned long tempoInicio = millis();
