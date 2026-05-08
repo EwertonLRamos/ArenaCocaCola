@@ -28,7 +28,7 @@ arduino_outputs = [
 ]
 
 arduino_inputs = [
-    Button(cfg["in_pin"], pull_up=True, active_high=False, bounce_time=None)
+    Button(cfg["in_pin"], pull_up=True, bounce_time=None)
     for cfg in MODULOS
 ]
 
