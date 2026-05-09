@@ -5,13 +5,13 @@ import threading
 import os
 import logging
 from flask import Flask, jsonify
-from gpiozero import Button, OutputDevice
+from gpiozero import DigitalInputDevice, OutputDevice
 
 # URL base para a API
 API_URL = os.environ.get("API_URL", "http://localhost:5009")
 
 def build_api_url(path: str) -> str:
-    return API_URL.rstrip('/') + '/api/game' + path.lstrip('/')
+    return API_URL.rstrip('/') + '/api/game/' + path.lstrip('/')
 
 MODULOS = [
     {"name": "Módulo 1", "out_pin": 24,  "in_pin": 23}#,
@@ -28,7 +28,7 @@ arduino_outputs = [
 ]
 
 arduino_inputs = [
-    Button(cfg["in_pin"], pull_up=True, bounce_time=None)
+    DigitalInputDevice(cfg["in_pin"], pull_up=True)
     for cfg in MODULOS
 ]
 
@@ -77,6 +77,7 @@ def rodar_rodada():
     modulo = MODULOS[selected_index]
 
     print(f"{modulo['name']} selecionado | Pino out - {modulo['out_pin']} Pino in - ({modulo['in_pin']})")
+    
 
     selected_output.on()
     time.sleep(0.05)
@@ -89,9 +90,9 @@ def rodar_rodada():
         if not jogo_ativo:
             desligar_todos_outputs()
             return
-
+        
         try:
-            if selected_input.is_pressed:
+            if selected_input.value:
                 foi_atingido = True
                 print(f"[SENSOR] Impacto detectado no pino {modulo['in_pin']}!")
                 break
@@ -99,7 +100,7 @@ def rodar_rodada():
             # Protege contra falhas de leitura do hardware
             pass
 
-        time.sleep(0.01)
+        #time.sleep(0.01)
 
     selected_output.off()
 
@@ -110,6 +111,7 @@ def rodar_rodada():
     if foi_atingido:
         try:
             url = build_api_url('/hit')
+            print(url)
             payload = {"targetId": selected_index, "hit": True}
             resp = requests.post(url, json=payload, timeout=2)
             if resp.ok:
