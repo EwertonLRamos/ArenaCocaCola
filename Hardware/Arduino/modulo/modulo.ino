@@ -16,7 +16,7 @@ void setup() {
     pinMode(pinosPiezo[i], INPUT);
   }
 
-  pinMode(pinoRpiIn, INPUT);
+  pinMode(pinoRpiIn, INPUT_PULLUP);
   pinMode(pinoRpiOut, OUTPUT);
 
   digitalWrite(pinoRpiOut, LOW);
@@ -26,7 +26,7 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(pinoRpiIn) == LOW) {
+  if (analogRead(pinoRpiIn) <= 700) {
     preencherCor(255, 255, 255);
     
     unsigned long tempoInicio = millis();
@@ -59,11 +59,11 @@ void loop() {
 
     if (atingiuMeta) {
       digitalWrite(pinoRpiOut, HIGH);
-      delay(100);
+      delay(500);
       digitalWrite(pinoRpiOut, LOW);
     }
 
-    while(digitalRead(pinoRpiIn) == HIGH) {
+    while(analogRead(pinoRpiIn) <= 700) {
       delay(10);
     }
   }
