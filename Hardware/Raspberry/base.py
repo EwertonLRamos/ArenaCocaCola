@@ -14,10 +14,10 @@ def build_api_url(path: str) -> str:
     return API_URL.rstrip('/') + '/api/game/' + path.lstrip('/')
 
 MODULOS = [
-    {"name": "Módulo 1", "out_pin": 24,  "in_pin": 23}#,
-    # {"name": "Módulo 2", "out_pin": 6,  "in_pin": 27},
-    # {"name": "Módulo 3", "out_pin": 13, "in_pin": 22},
-    # {"name": "Módulo 4", "out_pin": 19, "in_pin": 10},
+    {"name": "Módulo 1", "out_pin": 24,  "in_pin": 23},
+    {"name": "Módulo 2", "out_pin": 4,  "in_pin": 17},
+    {"name": "Módulo 3", "out_pin": 27, "in_pin": 22},
+    {"name": "Módulo 4", "out_pin": 5, "in_pin": 6}#,
     # {"name": "Módulo 5", "out_pin": 26, "in_pin": 9},
 ]
 
