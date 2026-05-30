@@ -17,8 +17,8 @@ MODULOS = [
     #{"name": "Módulo 1", "out_pin": 24,  "in_pin": 23},
     {"name": "Módulo 2", "out_pin": 4,  "in_pin": 17},
     {"name": "Módulo 3", "out_pin": 27, "in_pin": 22},
-    {"name": "Módulo 4", "out_pin": 5, "in_pin": 6}#,
-    # {"name": "Módulo 5", "out_pin": 26, "in_pin": 9},
+    {"name": "Módulo 4", "out_pin": 5, "in_pin": 6},
+    {"name": "Módulo 5", "out_pin": 26, "in_pin": 9},
 ]
 
 # Inicialização direta do Hardware (Raspberry Pi)
@@ -62,7 +62,7 @@ def rodar_servidor_flask():
 
 def rodar_rodada():
     global jogo_ativo
-    tempo_espera = random.randint(2, 3)
+    tempo_espera = 0
     
     inicio_espera = time.time()
     while (time.time() - inicio_espera) < tempo_espera:
@@ -124,7 +124,7 @@ def rodar_rodada():
     else:
         print(f"=> O tempo expirou: {modulo['name']} não foi acertado.")
 
-    time.sleep(0.5)
+    time.sleep(0.25)
 
 if __name__ == "__main__":
     desligar_todos_outputs()
