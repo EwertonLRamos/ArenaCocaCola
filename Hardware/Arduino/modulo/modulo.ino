@@ -89,83 +89,89 @@ const int numLeds = 17;
 
 Adafruit_NeoPixel fita(numLeds, pinoFitaLed, NEO_GRB + NEO_KHZ800);
 
-// Thresholds ajustáveis
-const int thresholdRpi = 100;   // Detecta sinal vindo do Raspberry
-const int thresholdImpacto = 50; // Sensibilidade dos piezos
+int leituraAnterior[numPiezos]; // agora SEM inicializar com 0
+
+const int thresholdRpi = 100;
+const int thresholdImpacto = 40;
 
 void setup() {
-  Serial.begin(115200); 
+  Serial.begin(115200);
 
-  for(int i = 0; i < numPiezos; i++) {
+  for (int i = 0; i < numPiezos; i++) {
     pinMode(pinosPiezo[i], INPUT);
   }
 
   pinMode(pinoRpiIn, INPUT_PULLUP);
   pinMode(pinoRpiOut, OUTPUT);
-
   digitalWrite(pinoRpiOut, LOW);
-  
+
   fita.begin();
   fita.show();
+
+  // 🔥 Inicializa baseline real dos piezos
+  for (int i = 0; i < numPiezos; i++) {
+    leituraAnterior[i] = analogRead(pinosPiezo[i]);
+  }
 }
 
 void loop() {
 
-  // Aguarda sinal válido do Raspberry
+  // 🔁 Atualiza baseline continuamente (fora da ação)
+  for (int i = 0; i < numPiezos; i++) {
+    leituraAnterior[i] = analogRead(pinosPiezo[i]);
+  }
+
+  // Aguarda sinal do Raspberry
   if (analogRead(pinoRpiIn) < thresholdRpi) {
 
-    preencherCor(255, 255, 255); // Branco = aguardando ação
+    preencherCor(255, 255, 255);
 
     unsigned long tempoInicio = millis();
     bool atingiuMeta = false;
 
-    int leituraAnterior[numPiezos] = {0};
-
-    // Janela de 2 segundos
     while (millis() - tempoInicio <= 2000) {
 
-      float soma = 0;
+      float somaDelta = 0;
 
       for (int i = 0; i < numPiezos; i++) {
-        int leituraAtual = analogRead(pinosPiezo[i]);
-        int delta = abs(leituraAtual - leituraAnterior[i]);
 
-        soma += delta;
+        int leituraAtual = analogRead(pinosPiezo[i]);
+
+        // 🔥 Apenas variação positiva
+        int delta = leituraAtual - leituraAnterior[i];
+
+        if (delta < 0) delta = 0;
+
+        somaDelta += delta;
+
+        // Atualiza para próxima comparação
         leituraAnterior[i] = leituraAtual;
       }
 
-      float media = soma / numPiezos;
+      float mediaDelta = somaDelta / numPiezos;
 
-      // Debug opcional
-      Serial.println(media);
+      Serial.println(mediaDelta);
 
-      if (media > thresholdImpacto) {
+      if (mediaDelta > thresholdImpacto) {
         atingiuMeta = true;
         break;
       }
 
-      delay(5); // pequena estabilização
+      delay(5);
     }
 
-    // Resultado visual
-    if (atingiuMeta) {
-      preencherCor(0, 255, 0); // Verde = sucesso
-    } else {
-      preencherCor(255, 0, 0); // Vermelho = falha
-    }
+    preencherCor(atingiuMeta ? 0 : 255, atingiuMeta ? 255 : 0, 0);
 
     delay(500);
+    preencherCor(0, 0, 0);
 
-    preencherCor(0, 0, 0); // Apaga
-
-    // Sinaliza Raspberry em caso de sucesso
     if (atingiuMeta) {
       digitalWrite(pinoRpiOut, HIGH);
       delay(300);
       digitalWrite(pinoRpiOut, LOW);
     }
 
-    // Aguarda liberação do sinal (evita loop infinito)
+    // Aguarda liberar trigger
     while (analogRead(pinoRpiIn) < thresholdRpi) {
       delay(10);
     }
