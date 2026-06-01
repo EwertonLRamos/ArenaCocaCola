@@ -23,7 +23,7 @@ function App() {
   const [isPreparing, setIsPreparing] = useState(true);
 
   useEffect(() => {
-    document.title = "Arena Coca-cola";
+    document.title = "Arena Chute-bate";
 
     const newConnection = new signalR.HubConnectionBuilder()
       .withUrl("http://localhost:5009/arenaHub")
@@ -60,7 +60,6 @@ function App() {
   setShowCountdown(true);
   setIsPreparing(true);
 
-  // "Prepare-se..."
   setTimeout(() => {
     setIsPreparing(false);
 
@@ -74,13 +73,12 @@ function App() {
       if (counter === 0) {
         clearInterval(interval);
 
-        // 👇 deixa o "Já!" aparecer antes de sair da tela
         setTimeout(() => {
           fetch(`http://localhost:5009/api/game/start?playerName=${name}`, { method: 'POST' })
             .catch(err => console.error("Erro ao iniciar jogo:", err));
 
           setShowCountdown(false);
-        }, 800); // pode ajustar (600–1000ms fica bom)
+        }, 800);
       }
     }, 1000);
   }, 1000);
@@ -92,9 +90,6 @@ function App() {
     setErrorMessage('');
   };
 
-  // ===========================
-  // TELA DE CONTAGEM
-  // ===========================
   if (showCountdown) {
     const getCountdownText = () => {
       if (isPreparing) return "Prepare-se...";
@@ -120,7 +115,7 @@ function App() {
 
             <div className="gift-content">
               <span className="challenge-top">Faça</span>
-              <span className="challenge-number">25</span>
+              <span className="challenge-number">20</span>
               <span className="challenge-bottom">pontos</span>
               <span className="challenge-reward">e ganhe um brinde!</span>
             </div>
@@ -130,9 +125,6 @@ function App() {
     );
   }
 
-  // ===========================
-  // TERMOS
-  // ===========================
   if (showTerms) {
     return (
       <div className="terms-overlay">
@@ -157,9 +149,6 @@ function App() {
     );
   }
 
-  // ===========================
-  // GAME OVER
-  // ===========================
   if (gameState?.isGameOver) {
     return (
       <div className="container background">
@@ -176,9 +165,6 @@ function App() {
     );
   }
 
-  // ===========================
-  // JOGO RODANDO
-  // ===========================
   if (gameState && !gameState.isGameOver) {
     return (
       <div className="container background">
@@ -198,12 +184,9 @@ function App() {
     );
   }
 
-  // ===========================
-  // HOME
-  // ===========================
   return (
     <div className="container background">
-      <h1 className="title">Arena<br />Coca-Cola</h1>
+      <h1 className="title">Arena<br />Chute-bate</h1>
 
       <div className="input-group">
         <input 
