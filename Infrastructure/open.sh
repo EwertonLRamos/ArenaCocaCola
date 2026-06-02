@@ -1,18 +1,42 @@
 #!/bin/bash
+
+set -e
+
 echo "=== Iniciando Arena Chute-bate ==="
 
-CAMINHO_DO_PROJETO="/home/usuario/Desktop/ArenaCocaCola"
+# ---------------------------------------------------------
+# GARANTIR DOTNET DISPONÍVEL
+# ---------------------------------------------------------
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$PATH:$HOME/.dotnet:$HOME/.dotnet/tools"
 
-cd "$CAMINHO_DO_PROJETO" || { 
-    echo "❌ ERRO: A pasta do projeto não foi encontrada!"
-    read -p "Pressione ENTER para fechar..." 
-    exit 1; 
-}
+DOTNET_CMD="dotnet"
+
+# fallback caso não esteja no PATH
+if ! command -v dotnet >/dev/null 2>&1; then
+    if [ -x "$HOME/.dotnet/dotnet" ]; then
+        DOTNET_CMD="$HOME/.dotnet/dotnet"
+    else
+        echo "❌ ERRO: .NET não encontrado. Verifique a instalação."
+        exit 1
+    fi
+fi
+
+echo "✔ .NET encontrado em: $(command -v $DOTNET_CMD || echo $DOTNET_CMD)"
+$DOTNET_CMD --version
+
+# ---------------------------------------------------------
+# VARIÁVEIS
+# ---------------------------------------------------------
+BASE_DIR="$(cd "$(dirname "$0")" && pwd)/.."
 
 HARDWARE_PID=""
 BACKEND_PID=""
 FRONTEND_PID=""
 
+# ---------------------------------------------------------
+# FUNÇÃO DE LIMPEZA
+# ---------------------------------------------------------
 limpar_processos() {
     echo -e "\n🛑 Encerrando sistema..."
     [ -n "$FRONTEND_PID" ] && kill $FRONTEND_PID 2>/dev/null
@@ -20,92 +44,93 @@ limpar_processos() {
     [ -n "$HARDWARE_PID" ] && sudo kill $HARDWARE_PID 2>/dev/null
     exit 0
 }
+
 trap limpar_processos INT TERM
 
 # ---------------------------------------------------------
-# Autenticação
+# AUTENTICAÇÃO
 # ---------------------------------------------------------
 echo -e "\n\nAutenticação"
 
 sudo -k 
-
 sudo -v || { 
-    echo "❌ ERRO: Falha ao obter permissão (Senha incorreta ou cancelada)."
+    echo "❌ ERRO: Falha na autenticação."
     read -p "Pressione ENTER para fechar..."
-    exit 1; 
+    exit 1
 }
-echo "Autenticado"
+
+echo "✔ Autenticado"
 
 # ---------------------------------------------------------
-# Hardware
+# HARDWARE
 # ---------------------------------------------------------
 echo -e "\n\nIniciando Hardware"
 
-cd Hardware/Raspberry
+cd "$BASE_DIR/Hardware/Raspberry" || { echo "❌ Pasta de hardware não encontrada"; exit 1; }
 
-sudo python3 base.py & HARDWARE_PID=$!
+sudo python3 base.py & 
+HARDWARE_PID=$!
 
 sleep 5
 
 if ! kill -0 $HARDWARE_PID 2>/dev/null; then
-    echo "❌ ERRO: O script do Hardware falhou ou parou inesperadamente."
-    read -p "Pressione ENTER para fechar..."
+    echo "❌ ERRO: Hardware não iniciou corretamente."
     limpar_processos
 fi
 
-cd ..
-echo "Hardware iniciado (PID: $HARDWARE_PID)."
-
-sleep 5
+echo "✔ Hardware iniciado (PID: $HARDWARE_PID)"
 
 # ---------------------------------------------------------
-# Backend
+# BACKEND
 # ---------------------------------------------------------
 echo -e "\n\nIniciando Backend"
-cd ../Backend
-dotnet run &
+
+cd "$BASE_DIR/Backend" || { echo "❌ Pasta Backend não encontrada"; exit 1; }
+
+$DOTNET_CMD run &
 BACKEND_PID=$!
 
 sleep 5
+
 if ! kill -0 $BACKEND_PID 2>/dev/null; then
-    echo "❌ ERRO: O Backend falhou ao iniciar. Verifique o código .NET."
-    read -p "Pressione ENTER para fechar..."
+    echo "❌ ERRO: Backend falhou ao iniciar."
     limpar_processos
 fi
-echo "Backend iniciado (PID: $BACKEND_PID)."
 
-sleep 5
+echo "✔ Backend iniciado (PID: $BACKEND_PID)"
 
 # ---------------------------------------------------------
-# Frontend
+# FRONTEND
 # ---------------------------------------------------------
 echo -e "\n\nIniciando Frontend"
-cd ../Frontend
+
+cd "$BASE_DIR/Frontend" || { echo "❌ Pasta Frontend não encontrada"; exit 1; }
+
 if [ ! -d "node_modules" ]; then
-    echo "📦 Instalando dependências do Frontend (isso pode demorar um pouco na primeira vez)..."
+    echo "📦 Instalando dependências do Frontend..."
     npm install
 fi
+
 npm run dev &
 FRONTEND_PID=$!
 
 sleep 5
+
 if ! kill -0 $FRONTEND_PID 2>/dev/null; then
-    echo "❌ ERRO: O Frontend falhou ao iniciar."
-    read -p "Pressione ENTER para fechar..."
+    echo "❌ ERRO: Frontend falhou ao iniciar."
     limpar_processos
 fi
-echo "Frontend iniciado (PID: $FRONTEND_PID)."
 
-sleep 5
+echo "✔ Frontend iniciado (PID: $FRONTEND_PID)"
 
 # ---------------------------------------------------------
 # FINALIZAÇÃO
 # ---------------------------------------------------------
 echo -e "\n================================================="
-echo "TUDO PRONTO! A Arena Chute-bate está online."
-echo "Mantenha esta janela aberta. Pressione CTRL+C para desligar tudo de forma segura."
+echo "🚀 TUDO PRONTO! Sistema online."
+echo "Pressione CTRL+C para encerrar com segurança."
 echo "================================================="
 
-xdg-open "http://localhost:5173/?" 2>/dev/null &
+xdg-open "http://localhost:5173/" 2>/dev/null &
 
 wait
