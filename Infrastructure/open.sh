@@ -1,13 +1,7 @@
 #!/bin/bash
 echo "=== Iniciando Arena Chute-bate ==="
 
-CAMINHO_DO_PROJETO="/home/usuario/Desktop/ArenaCocaCola"
-
-cd "$CAMINHO_DO_PROJETO" || { 
-    echo "❌ ERRO: A pasta do projeto não foi encontrada!"
-    read -p "Pressione ENTER para fechar..." 
-    exit 1; 
-}
+cd ..
 
 HARDWARE_PID=""
 BACKEND_PID=""
