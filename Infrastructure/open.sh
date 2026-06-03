@@ -1,7 +1,12 @@
 #!/bin/bash
 echo "=== Iniciando Arena Chute-bate ==="
 
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$PATH:$HOME/.dotnet:$HOME/.dotnet/tools"
+
 cd ..
+cd Documents/
+cd ArenaCocaCola/
 
 HARDWARE_PID=""
 BACKEND_PID=""
