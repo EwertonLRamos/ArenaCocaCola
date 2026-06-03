@@ -1,4 +1,5 @@
 #!/bin/bash
+
 echo "=== Iniciando Arena Chute-bate ==="
 
 cd ..
@@ -7,6 +8,56 @@ HARDWARE_PID=""
 BACKEND_PID=""
 FRONTEND_PID=""
 
+# ---------------------------------------------------------
+# UI HELPERS
+# ---------------------------------------------------------
+spinner() {
+    local pid=$1
+    local delay=0.1
+    local spinstr='|/-\'
+
+    while kill -0 $pid 2>/dev/null; do
+        for i in $(seq 0 3); do
+            printf "\r[%c] Carregando..." "${spinstr:$i:1}"
+            sleep $delay
+        done
+    done
+
+    printf "\r✔ Concluído!        \n"
+}
+
+run_step() {
+    local name=$1
+    shift
+
+    echo -e "\n➡ $name"
+
+    "$@" &
+    local pid=$!
+
+    spinner $pid
+
+    wait $pid
+    local status=$?
+
+    if [ $status -ne 0 ]; then
+        echo "❌ ERRO em: $name"
+        read -p "Pressione ENTER para sair..."
+        limpar_processos
+    else
+        echo "✅ $name finalizado"
+    fi
+}
+
+print_header() {
+    echo -e "\n======================================"
+    echo "$1"
+    echo "======================================"
+}
+
+# ---------------------------------------------------------
+# CLEANUP
+# ---------------------------------------------------------
 limpar_processos() {
     echo -e "\n🛑 Encerrando sistema..."
     [ -n "$FRONTEND_PID" ] && kill $FRONTEND_PID 2>/dev/null
@@ -17,89 +68,101 @@ limpar_processos() {
 trap limpar_processos INT TERM
 
 # ---------------------------------------------------------
-# Autenticação
+# AUTENTICAÇÃO
 # ---------------------------------------------------------
-echo -e "\n\nAutenticação"
+print_header "Autenticação"
 
-sudo -k 
+sudo -k
+sudo -v &
+spinner $!
 
-sudo -v || { 
-    echo "❌ ERRO: Falha ao obter permissão (Senha incorreta ou cancelada)."
-    read -p "Pressione ENTER para fechar..."
-    exit 1; 
-}
-echo "Autenticado"
+if [ $? -ne 0 ]; then
+    echo "❌ Falha na autenticação"
+    exit 1
+fi
+
+echo "🔐 Autenticado com sucesso"
 
 # ---------------------------------------------------------
-# Hardware
+# HARDWARE
 # ---------------------------------------------------------
-echo -e "\n\nIniciando Hardware"
+print_header "Iniciando Hardware"
 
 cd Hardware/Raspberry
 
-sudo python3 base.py & HARDWARE_PID=$!
+sudo python3 base.py &
+HARDWARE_PID=$!
 
-sleep 5
+spinner $HARDWARE_PID
+
+sleep 2
 
 if ! kill -0 $HARDWARE_PID 2>/dev/null; then
-    echo "❌ ERRO: O script do Hardware falhou ou parou inesperadamente."
-    read -p "Pressione ENTER para fechar..."
+    echo "❌ Hardware falhou"
     limpar_processos
 fi
 
+echo "✅ Hardware rodando (PID: $HARDWARE_PID)"
 cd ..
-echo "Hardware iniciado (PID: $HARDWARE_PID)."
-
-sleep 5
 
 # ---------------------------------------------------------
-# Backend
+# BACKEND
 # ---------------------------------------------------------
-echo -e "\n\nIniciando Backend"
-cd ../Backend
+print_header "Iniciando Backend"
+
+cd Backend
+
 dotnet run &
 BACKEND_PID=$!
 
-sleep 5
+spinner $BACKEND_PID
+
+sleep 2
+
 if ! kill -0 $BACKEND_PID 2>/dev/null; then
-    echo "❌ ERRO: O Backend falhou ao iniciar. Verifique o código .NET."
-    read -p "Pressione ENTER para fechar..."
+    echo "❌ Backend falhou"
     limpar_processos
 fi
-echo "Backend iniciado (PID: $BACKEND_PID)."
 
-sleep 5
+echo "✅ Backend rodando (PID: $BACKEND_PID)"
+
+cd ..
 
 # ---------------------------------------------------------
-# Frontend
+# FRONTEND
 # ---------------------------------------------------------
-echo -e "\n\nIniciando Frontend"
-cd ../Frontend
+print_header "Iniciando Frontend"
+
+cd Frontend
+
 if [ ! -d "node_modules" ]; then
-    echo "📦 Instalando dependências do Frontend (isso pode demorar um pouco na primeira vez)..."
-    npm install
+    run_step "Instalando dependências do Frontend" npm install
 fi
+
 npm run dev &
 FRONTEND_PID=$!
 
-sleep 5
+spinner $FRONTEND_PID
+
+sleep 2
+
 if ! kill -0 $FRONTEND_PID 2>/dev/null; then
-    echo "❌ ERRO: O Frontend falhou ao iniciar."
-    read -p "Pressione ENTER para fechar..."
+    echo "❌ Frontend falhou"
     limpar_processos
 fi
-echo "Frontend iniciado (PID: $FRONTEND_PID)."
 
-sleep 5
+echo "✅ Frontend rodando (PID: $FRONTEND_PID)"
+
+cd ..
 
 # ---------------------------------------------------------
-# FINALIZAÇÃO
+# FINAL
 # ---------------------------------------------------------
-echo -e "\n================================================="
-echo "TUDO PRONTO! A Arena Chute-bate está online."
-echo "Mantenha esta janela aberta. Pressione CTRL+C para desligar tudo de forma segura."
-echo "================================================="
+print_header "Sistema Pronto"
 
-xdg-open "http://localhost:5173/?" 2>/dev/null &
+echo "🚀 Arena Chute-bate ONLINE"
+echo "Pressione CTRL+C para encerrar com segurança"
+
+xdg-open "http://localhost:5173/" 2>/dev/null &
 
 wait
